@@ -90,3 +90,84 @@ form.addEventListener('submit', async (event) => {
   // DAY 3: add the error state here.
   // If result.ok is false, clear the list and show result.error.message.
 })
+const searchForm = document.getElementById("bookSearch");
+const searchInput = document.getElementById("searchInput");
+const searchMessage = document.getElementById("searchMessage");
+
+const categoryTabs = document.querySelectorAll(".category-tab");
+
+async function loadBookCategories() {
+    try {
+        const response = await fetch("./books.json");
+
+        if (!response.ok) {
+            throw new Error("Could not load books.json");
+        }
+
+        const data = await response.json();
+        return data.categories;
+    } catch (error) {
+        console.error(error);
+        searchMessage.textContent =
+            "Unable to load the book database.";
+        return null;
+    }
+}
+
+searchForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const searchTerm = searchInput.value
+        .trim()
+        .toLowerCase();
+
+    if (!searchTerm) {
+        categoryTabs.forEach(tab => {
+            tab.style.display = "";
+        });
+
+        searchMessage.textContent = "Enter something to search.";
+        return;
+    }
+
+    const categories = await loadBookCategories();
+
+    if (!categories) return;
+
+    let results = 0;
+
+    categoryTabs.forEach((tab, index) => {
+        const category = categories[index];
+
+        if (!category) return;
+
+        const categoryName = category.name.toLowerCase();
+
+        const items = category.items.join(" ").toLowerCase();
+
+        const matches =
+            categoryName.includes(searchTerm) ||
+            items.includes(searchTerm);
+
+        tab.style.display = matches ? "" : "none";
+
+        if (matches) results++;
+    });
+
+    searchMessage.textContent = results > 0
+        ? `${results} matching categories found!`
+        : "No matching categories found.";
+});
+document.getElementById("resetSearch").addEventListener("click", function() {
+    categoryTabs.forEach(tab => {
+        tab.style.display = "";
+    });
+
+    searchInput.value = "";
+    searchMessage.textContent = "Showing all book categories.";
+
+    document.querySelector(".category-grid").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+});
